@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+module github.com/BominRahmani/opentelemetry-collector-contrib/receiver/vcenterreceiver
 
 go 1.22.0
 
