@@ -70,14 +70,12 @@ func newProcessor(config *Config, log *zap.Logger, nextConsumer consumer.Metrics
 }
 
 func (p *Processor) Start(_ context.Context, _ component.Host) error {
-	exportTicker := time.NewTicker(p.config.Interval)
 	go func() {
 		for {
 			select {
 			case <-p.ctx.Done():
-				exportTicker.Stop()
 				return
-			case <-exportTicker.C:
+			default:
 				p.exportMetrics()
 			}
 		}
@@ -108,54 +106,44 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 				case pmetric.MetricTypeSummary:
 					mClone, metricID := p.getOrCloneMetric(rm, sm, m)
 					storeDataPoints(m.Summary().DataPoints(), mClone.Summary().DataPoints(), metricID, p.summaryLookup, p.config.DetectionWindow)
-					return true
 				case pmetric.MetricTypeGauge:
 					mClone, metricID := p.getOrCloneMetric(rm, sm, m)
 					storeDataPoints(m.Gauge().DataPoints(), mClone.Gauge().DataPoints(), metricID, p.numberLookup, p.config.DetectionWindow)
-					return true
 				case pmetric.MetricTypeSum:
 					sum := m.Sum()
-					if !sum.IsMonotonic() {
+					if !sum.IsMonotonic() || sum.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 						return false
 					}
-
-					if sum.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
-						return false
-					}
-
-
 					mClone, metricID := p.getOrCloneMetric(rm, sm, m)
 					storeDataPoints(m.Sum().DataPoints(), mClone.Sum().DataPoints(), metricID, p.numberLookup, p.config.DetectionWindow)
-					return true
 				case pmetric.MetricTypeHistogram:
 					histogram := m.Histogram()
 					if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 						return false
 					}
-
 					mClone, metricID := p.getOrCloneMetric(rm, sm, m)
 					cloneHistogram := mClone.Histogram()
 					storeDataPoints(m.Histogram().DataPoints(), cloneHistogram.DataPoints(), metricID, p.histogramLookup, p.config.DetectionWindow)
-					return true
 				case pmetric.MetricTypeExponentialHistogram:
 					expHistogram := m.ExponentialHistogram()
 					if expHistogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 						return false
 					}
-
 					mClone, metricID := p.getOrCloneMetric(rm, sm, m)
 					cloneExpHistogram := mClone.ExponentialHistogram()
 					storeDataPoints(m.ExponentialHistogram().DataPoints(), cloneExpHistogram.DataPoints(), metricID, p.expHistogramLookup, p.config.DetectionWindow)
-					return true
 				default:
-					errs = errors.Join(fmt.Errorf("invalid MetricType %d", m.Type()))
+					errs = errors.Join(errs, fmt.Errorf("invalid MetricType %d", m.Type()))
 					return false
 				}
+				return false
 			})
 			return sm.Metrics().Len() == 0
 		})
 		return rm.ScopeMetrics().Len() == 0
 	})
+
+	p.detectZScoreAnomoly(md)
 
 	if err := p.nextConsumer.ConsumeMetrics(ctx, md); err != nil {
 		errs = errors.Join(errs, err)
@@ -163,8 +151,6 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 
 	return errs
 }
-
-func (p *Processor) detectZScoreAnomoly(md pmetric.Metrics) {
 	for streamID, dataPoints := range p.numberLookup {
 		if len(dataPoints) < p.config.DetectionWindow {
 			continue
@@ -265,34 +251,19 @@ func (p *Processor) exportMetrics() {
 
 		// Clear all the lookup references
 		clear(p.rmLookup)
-		clear(p.smLookup)
-		clear(p.mLookup)
-		clear(p.numberLookup)
-		clear(p.histogramLookup)
-		clear(p.expHistogramLookup)
-		clear(p.summaryLookup)
-
-		return out
-	}()
-
-	if err := p.nextConsumer.ConsumeMetrics(p.ctx, md); err != nil {
-		p.logger.Error("Metrics export failed", zap.Error(err))
-	}
-}
-
-func (p *Processor) getOrCloneMetric(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric) (pmetric.Metric, identity.Metric) {
-	// Find the ResourceMetrics
-	resID := identity.OfResource(rm.Resource())
-	rmClone, ok := p.rmLookup[resID]
-	if !ok {
-		// We need to clone it *without* the ScopeMetricsSlice data
-		rmClone = p.md.ResourceMetrics().AppendEmpty()
-		rm.Resource().CopyTo(rmClone.Resource())
-		rmClone.SetSchemaUrl(rm.SchemaUrl())
-		p.rmLookup[resID] = rmClone
-	}
-
-	// Find the ScopeMetrics
+		func (p *Processor) exportMetrics() {
+			p.stateLock.Lock()
+			defer p.stateLock.Unlock()
+		
+			// Clear all the lookup references
+			clear(p.rmLookup)
+			clear(p.smLookup)
+			clear(p.mLookup)
+			clear(p.numberLookup)
+			clear(p.histogramLookup)
+			clear(p.expHistogramLookup)
+			clear(p.summaryLookup)
+		}
 	scopeID := identity.OfScope(resID, sm.Scope())
 	smClone, ok := p.smLookup[scopeID]
 	if !ok {
