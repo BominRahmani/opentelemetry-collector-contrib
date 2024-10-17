@@ -6,7 +6,6 @@ package anomolyprocessor // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -24,7 +23,6 @@ func NewFactory() processor.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Interval: 180 * time.Second, // default to three minutes, however the longer the interval the more accurate the anomoly detection
 	}
 }
 
