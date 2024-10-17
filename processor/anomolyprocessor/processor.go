@@ -114,7 +114,6 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 					storeDataPoints(m.Gauge().DataPoints(), mClone.Gauge().DataPoints(), metricID, p.numberLookup, p.config.DetectionWindow)
 					return true
 				case pmetric.MetricTypeSum:
-					Check if we care about this value
 					sum := m.Sum()
 					if !sum.IsMonotonic() {
 						return false
