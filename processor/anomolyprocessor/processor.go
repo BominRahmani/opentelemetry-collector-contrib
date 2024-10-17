@@ -151,6 +151,8 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 
 	return errs
 }
+
+func (p *Processor) detectZScoreAnomoly(md pmetric.Metrics) {
 	for streamID, dataPoints := range p.numberLookup {
 		if len(dataPoints) < p.config.DetectionWindow {
 			continue
@@ -238,32 +240,32 @@ func storeDataPoints[DPS metrics.DataPointSlice[DP], DP metrics.DataPoint[DP]](d
 }
 
 func (p *Processor) exportMetrics() {
-	md := func() pmetric.Metrics {
-		p.stateLock.Lock()
-		defer p.stateLock.Unlock()
+	p.stateLock.Lock()
+	defer p.stateLock.Unlock()
 
-		// ConsumeMetrics() has prepared our own pmetric.Metrics instance ready for us to use
-		// Take it and clear replace it with a new empty one
-		out := p.md
-		p.md = pmetric.NewMetrics()
+	// Clear all the lookup references
+	clear(p.rmLookup)
+	clear(p.smLookup)
+	clear(p.mLookup)
+	clear(p.numberLookup)
+	clear(p.histogramLookup)
+	clear(p.expHistogramLookup)
+	clear(p.summaryLookup)
+}
 
-    p.detectZScoreAnomoly(out)
+func (p *Processor) getOrCloneMetric(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric) (pmetric.Metric, identity.Metric) {
+	// Find the ResourceMetrics
+	resID := identity.OfResource(rm.Resource())
+	rmClone, ok := p.rmLookup[resID]
+	if !ok {
+		// We need to clone it *without* the ScopeMetricsSlice data
+		rmClone = p.md.ResourceMetrics().AppendEmpty()
+		rm.Resource().CopyTo(rmClone.Resource())
+		rmClone.SetSchemaUrl(rm.SchemaUrl())
+		p.rmLookup[resID] = rmClone
+	}
 
-		// Clear all the lookup references
-		clear(p.rmLookup)
-		func (p *Processor) exportMetrics() {
-			p.stateLock.Lock()
-			defer p.stateLock.Unlock()
-		
-			// Clear all the lookup references
-			clear(p.rmLookup)
-			clear(p.smLookup)
-			clear(p.mLookup)
-			clear(p.numberLookup)
-			clear(p.histogramLookup)
-			clear(p.expHistogramLookup)
-			clear(p.summaryLookup)
-		}
+	// Find the ScopeMetrics
 	scopeID := identity.OfScope(resID, sm.Scope())
 	smClone, ok := p.smLookup[scopeID]
 	if !ok {
