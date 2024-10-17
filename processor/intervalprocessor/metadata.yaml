@@ -1,7 +1,7 @@
 type: interval
 
 status:
-  class: processor
+  class: interval
   stability:
     development: [metrics]
   distributions: []

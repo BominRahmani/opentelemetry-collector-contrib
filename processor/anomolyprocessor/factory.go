@@ -17,7 +17,7 @@ import (
 // NewFactory returns a new factory for the Metrics Generation processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		component.MustNewType("interval"),
+		component.MustNewType("anomoly"),
 		createDefaultConfig,
 		processor.WithMetrics(createMetricsProcessor, component.StabilityLevelDevelopment))
 }
