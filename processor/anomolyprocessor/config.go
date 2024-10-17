@@ -19,11 +19,10 @@ var _ component.Config = (*Config)(nil)
 // Config defines the configuration for the processor.
 type Config struct {
 	// Interval is the time interval at which the processor will aggregate metrics.
-	Interval          time.Duration   `mapstructure:"interval"`
-	DetectionWindow   int             `mapstructure:"detection_window"`
-	Detector          AnomolyDetector `mapstructure:"detector"`
-	AnomolyType       string          `mapstructure:"anomoly_type"`
-	AnomolyThreshold float64             `mapstructure:"anomoly_threshold"`
+	Interval         time.Duration   `mapstructure:"interval"`
+	DetectionWindow  int             `mapstructure:"detection_window"`
+	Detector         AnomolyDetector `mapstructure:"detector"`
+	AnomolyThreshold float64         `mapstructure:"anomoly_threshold"`
 }
 
 type AnomolyDetector struct {

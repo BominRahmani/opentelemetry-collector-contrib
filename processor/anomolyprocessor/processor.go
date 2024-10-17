@@ -223,7 +223,7 @@ func (p *Processor) detectAnomalies(md pmetric.Metrics) {
 		stdDev := calculateStdDev(dataPoints, mean)
 		latestValue := dataPoints[len(dataPoints)-1].DoubleValue()
 
-		if isAnomaly(latestValue, mean, stdDev, p.config.AnomalyThreshold) {
+		if isAnomaly(latestValue, mean, stdDev, p.config.AnomolyThreshold) {
 			// Mark the metric as anomalous
 			// This could involve adding an attribute to the metric or creating a new metric
 			p.logger.Info("Anomaly detected",
