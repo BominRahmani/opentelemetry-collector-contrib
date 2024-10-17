@@ -4,7 +4,6 @@
 package anomolyprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/anomolyprocessor"
 
 import (
-
 	"go.opentelemetry.io/collector/component"
 )
 

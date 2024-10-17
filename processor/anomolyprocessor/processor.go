@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"math"
 	"sync"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -182,7 +181,6 @@ func calculateMean(dataPoints []pmetric.NumberDataPoint) float64 {
 	}
 	return sum / float64(len(dataPoints))
 }
-
 
 // σ = √(∑((x−¯x) ( x − x ¯ ))**2 / N )
 func calculateStdDev(dataPoints []pmetric.NumberDataPoint, mean float64) float64 {

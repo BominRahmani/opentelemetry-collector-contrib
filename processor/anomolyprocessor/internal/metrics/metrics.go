@@ -4,17 +4,17 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/anomolyprocessor/internal/metrics"
 
 import (
-"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type DataPointSlice[DP DataPoint[DP]] interface {
-Len() int
-At(i int) DP
-AppendEmpty() DP
+	Len() int
+	At(i int) DP
+	AppendEmpty() DP
 }
 
 type DataPoint[Self any] interface {
-Timestamp() pcommon.Timestamp
-Attributes() pcommon.Map
-CopyTo(dest Self)
+	Timestamp() pcommon.Timestamp
+	Attributes() pcommon.Map
+	CopyTo(dest Self)
 }
