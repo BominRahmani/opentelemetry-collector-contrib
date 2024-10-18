@@ -1,0 +1,12 @@
+type: anomoly
+
+status:
+  class: processor
+  stability:
+    development: [metrics, logs]
+  distributions: []
+  warnings: [Statefulness]
+  codeowners:
+    active: [bominrahmani]
+tests:
+  config:
