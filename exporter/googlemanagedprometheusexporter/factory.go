@@ -39,7 +39,8 @@ func createDefaultConfig() component.Config {
 		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 		GMPConfig: GMPConfig{
 			MetricConfig: MetricConfig{
-				Config: googlemanagedprometheus.DefaultConfig(),
+				Config:                  googlemanagedprometheus.DefaultConfig(),
+				CumulativeNormalization: true,
 			},
 		},
 	}
@@ -55,7 +56,7 @@ func createMetricsExporter(
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetrics(
 		ctx,
 		params,
 		cfg,

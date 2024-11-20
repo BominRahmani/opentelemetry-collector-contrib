@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	"go.uber.org/zap"
 )
 
 func TestNewOpampAgent(t *testing.T) {
@@ -53,6 +54,7 @@ func TestNewOpampAgentAttributes(t *testing.T) {
 func TestCreateAgentDescription(t *testing.T) {
 	hostname, err := os.Hostname()
 	require.NoError(t, err)
+	description := getOSDescription(zap.NewNop())
 
 	serviceName := "otelcol-distrot"
 	serviceVersion := "distro.0"
@@ -76,6 +78,7 @@ func TestCreateAgentDescription(t *testing.T) {
 				NonIdentifyingAttributes: []*protobufs.KeyValue{
 					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
 					stringKeyValue(semconv.AttributeHostName, hostname),
+					stringKeyValue(semconv.AttributeOSDescription, description),
 					stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
 				},
 			},
@@ -99,6 +102,7 @@ func TestCreateAgentDescription(t *testing.T) {
 					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
 					stringKeyValue(semconv.AttributeHostName, hostname),
 					stringKeyValue(semconv.AttributeK8SPodName, "my-very-cool-pod"),
+					stringKeyValue(semconv.AttributeOSDescription, description),
 					stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
 				},
 			},
@@ -119,6 +123,7 @@ func TestCreateAgentDescription(t *testing.T) {
 				NonIdentifyingAttributes: []*protobufs.KeyValue{
 					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
 					stringKeyValue(semconv.AttributeHostName, "override-host"),
+					stringKeyValue(semconv.AttributeOSDescription, description),
 					stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
 				},
 			},
@@ -127,7 +132,6 @@ func TestCreateAgentDescription(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			cfg := createDefaultConfig().(*Config)
 			tc.cfg(cfg)
 
@@ -183,6 +187,7 @@ func TestComposeEffectiveConfig(t *testing.T) {
 	ec = o.composeEffectiveConfig()
 	assert.NotNil(t, ec)
 	assert.YAMLEq(t, string(expected), string(ec.ConfigMap.ConfigMap[""].Body))
+	assert.Equal(t, "text/yaml", ec.ConfigMap.ConfigMap[""].ContentType)
 }
 
 func TestShutdown(t *testing.T) {
