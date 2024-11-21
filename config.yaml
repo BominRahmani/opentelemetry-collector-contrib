@@ -1,0 +1,26 @@
+receivers:
+  filelog:
+    include: [ /Users/ozi/observiq/test.json ]
+    start_at: beginning
+    operators:
+      - type: json_parser
+
+processors:
+  transform:
+    log_statements:
+      - context: log
+        statements:
+          - unroll(attributes["body"], attributes["item"])
+
+exporters:
+  file:
+    path: ./test
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    logs:
+      receivers: [filelog]
+      processors: [transform]
+      exporters: [debug, file]
